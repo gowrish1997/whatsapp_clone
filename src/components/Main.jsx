@@ -24,9 +24,12 @@ function Main() {
     setUser,
     currentChatUser,
     setMessages,
+    messages,
     messageSearch,
     videoCall,
     voiceCall,
+    contactList,
+    setContactList,
     endCallHandler,
     setIncomingVoiceCall,
     setInComingVideoCall,
@@ -36,6 +39,12 @@ function Main() {
   } = useContext(UserContext);
   const [redirectLogin, setRedirectLogin] = useState(false);
   const [socketEvent, setSocketEvent] = useState(false);
+  const currentChatUserRef = useRef(null);
+  const messagesRef = useRef(null);
+  const contactListRef = useRef(null);
+  currentChatUserRef.current = currentChatUser;
+  messagesRef.current = messages;
+  contactListRef.current = contactList;
 
   useEffect(() => {
     if (redirectLogin) router.push("/login");
@@ -54,18 +63,19 @@ function Main() {
       });
       const { status, data } = await res.json();
 
-      if (status) {
+      if (!status) {
         router.push("/login");
+      } else {
+        const { id, name, email, profilePicture, about } = data;
+        setUser({
+          id: id,
+          name: name,
+          email: email,
+          profilePicture: profilePicture,
+          status: about,
+        });
+        socket.emit("add-user", id);
       }
-
-      const { id, name, email, profilePicture, about } = data;
-      setUser({
-        id: id,
-        name: name,
-        email: email,
-        profilePicture: profilePicture,
-        status: about,
-      });
     }
   });
 
@@ -78,7 +88,23 @@ function Main() {
   useEffect(() => {
     if (!socketEvent && socket) {
       socket.on("msg-received", (data) => {
-        setMessages((prev) => [...prev, data.message]);
+        if (currentChatUserRef.current?.id === data.from) {
+          setMessages((prev) => [...prev, data.message]);
+          socket.emit("update-msg", data.from);
+        }
+        if (currentChatUserRef.current?.id !== data.from) {
+          console.log('this one is triggering')
+          const updatedContactList = contactListRef.current?.map((contact) => {
+            if (contact.id === data.from) {
+              return {
+                ...contact,
+                totalUnreadMessages: contact.totalUnreadMessages + 1,
+              };
+            }
+            return contact;
+          });
+          setContactList(updatedContactList);
+        }
       });
 
       socket.on("incoming-voice-call", ({ from, roomId, callType }) => {
@@ -86,7 +112,6 @@ function Main() {
       });
 
       socket.on("incoming-video-call", ({ from, roomId, callType }) => {
-        console.log("incoming-video-call");
         setInComingVideoCall({ ...from, roomId, callType });
       });
       socket.on("incoming-video-call", ({ from, roomId, callType }) => {
@@ -104,18 +129,28 @@ function Main() {
       socket.on("voice-call-rejected", () => {
         endCallHandler();
       });
-      // socket.on("accept-incoming-call", ({id}) => {
-      //   endCallHandler();
-      // });
 
       socket.on("online-users", (onlineUsers) => {
-        setOnlineUsers(onlineUsers);
+        setOnlineUsers(onlineUsers.onlineUsers);
+      });
+
+      socket.on("updating-to-read", (id) => {
+        const updatedMessages = messagesRef.current?.map((message) => {
+          if (message.messageStatus !== "read") {
+            return { ...message, messageStatus: "read" };
+          }
+          return message;
+        });
+
+        setMessages(updatedMessages);
       });
 
       setSocketEvent(true);
     }
-    return () => socket.off("msg-received");
-  }, []);
+    return () => {
+      socket.off("msg-received");
+    };
+  }, [socket]);
 
   useEffect(() => {
     const getMessages = async () => {

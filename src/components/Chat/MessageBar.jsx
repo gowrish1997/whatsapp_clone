@@ -87,6 +87,7 @@ function MessageBar() {
   };
 
   const sendMessage = async () => {
+    console.log("send message");
     try {
       const { data } = await axios.post(ADD_MESSAGES, {
         from: user.id,
@@ -102,6 +103,8 @@ function MessageBar() {
 
       setMessages((prev) => [...prev, data.message]);
       setMessage("");
+      console.log("setting show audio recorder false");
+      setShowEmojiPicker(false);
     } catch (err) {
       console.log(err);
     }

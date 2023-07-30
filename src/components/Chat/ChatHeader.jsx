@@ -17,6 +17,7 @@ function ChatHeader() {
     onlineUsers,
     setVoiceCall,
   } = useContext(UserContext);
+
   const [isContextMenu, setIsContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({
     x: 0,
@@ -60,7 +61,9 @@ function ChatHeader() {
         <div className="flex flex-col ">
           <span className="text-primary-strong  ">{currentChatUser?.name}</span>
           <span className="text-secondary text-sm ">
-            {onlineUsers?.includes?.(currentChatUser?.id) ? "online" : "offline"}
+            {onlineUsers?.includes?.(currentChatUser?.id)
+              ? "online"
+              : "offline"}
           </span>
         </div>
       </div>

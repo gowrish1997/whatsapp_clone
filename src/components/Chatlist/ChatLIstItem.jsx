@@ -1,14 +1,36 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Avatar from "../common/Avatar";
 import { UserContext } from "@/pages/_app";
 import { useContext } from "react";
 import { calculateTime } from "@/utils/CalculateTime";
 import MessageStatus from "../common/MessageStatus";
 import { FaMicrophone, FaCamera } from "react-icons/fa";
+import { socket } from "../../../socket";
 
-function ChatLIstItem({ data, isContactPage = false, key }) {
-  const { user, currentChatUser, setCurrentChatUser, setContactPage } =
-    useContext(UserContext);
+function ChatLIstItem({ data, isContactPage = false }) {
+  const {
+    user,
+    currentChatUser,
+    contactList,
+    setMessages,
+    messages,
+    setContactList,
+    setCurrentChatUser,
+    setContactPage,
+  } = useContext(UserContext);
+
+  const updateContactListhandler = () => {
+    const updatedContactList = contactList?.map((contact) => {
+      if (contact.id === data.id) {
+        return {
+          ...contact,
+          totalUnreadMessages: 0,
+        };
+      }
+      return contact;
+    });
+    setContactList(updatedContactList);
+  };
 
   const handleContactClick = () => {
     if (isContactPage) {
@@ -17,13 +39,21 @@ function ChatLIstItem({ data, isContactPage = false, key }) {
         about: data.about,
         profilePicture: data.profilePicture,
         email: data.email,
-        id: user.id == data.senderId ? data.receiverId : data.senderId,
+        id: data.id,
       });
+      updateContactListhandler();
+      setContactPage(false);
+      socket.emit("update-msg", data?.id);
     } else {
       setCurrentChatUser(data);
       setContactPage(false);
+      updateContactListhandler();
+      socket.emit("update-msg", data?.id);
     }
   };
+  useEffect(() => {
+    console.log(messages);
+  }, [messages]);
 
   return (
     <div

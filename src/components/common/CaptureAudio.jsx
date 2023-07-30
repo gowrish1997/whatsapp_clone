@@ -173,6 +173,7 @@ function CaptureAudio({ hide }) {
           message: data.message,
         });
         setMessages((prev) => [...prev, data.message]);
+        hide(false);
       }
     } catch (err) {
       console.log(err);
