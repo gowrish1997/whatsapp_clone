@@ -47,43 +47,75 @@ function Main() {
   contactListRef.current = contactList;
 
   useEffect(() => {
-    if (redirectLogin) router.push("/login");
-  }, [redirectLogin]);
-
-  onAuthStateChanged(firebaseAuth, async (currentUser) => {
-    if (!currentUser) setRedirectLogin(true);
-
-    if (!user.name && currentUser?.email) {
-      const res = await fetch(CHECK_USER, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: currentUser.email }),
-      });
-      const { status, data } = await res.json();
-
-      if (!status) {
+    const getUserProfile = async () => {
+      const userProfile = JSON.parse(localStorage.getItem("user"));
+      console.log(userProfile);
+      if (!userProfile) {
         router.push("/login");
       } else {
-        const { id, name, email, profilePicture, about } = data;
-        setUser({
-          id: id,
-          name: name,
-          email: email,
-          profilePicture: profilePicture,
-          status: about,
-        });
-        socket.emit("add-user", id);
-      }
-    }
-  });
+        if (!user.name && userProfile?.email) {
+          const res = await fetch(CHECK_USER, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: userProfile?.email }),
+          });
+          const { status, data } = await res.json();
 
-  useEffect(() => {
-    if (user) {
-      socket.emit("add-user", user.id);
-    }
-  }, [user]);
+          if (!status) {
+            router.push("/login");
+          } else {
+            const { id, name, email, profilePicture, about } = data;
+            setUser({
+              id: id,
+              name: name,
+              email: email,
+              profilePicture: profilePicture,
+              status: about,
+            });
+            socket.emit("add-user", id);
+          }
+        }
+      }
+    };
+    getUserProfile();
+  }, []);
+
+  // onAuthStateChanged(firebaseAuth, async (currentUser) => {
+  //   if (!currentUser) setRedirectLogin(true);
+
+  //   if (!user.name && currentUser?.email) {
+  //     const res = await fetch(CHECK_USER, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ email: currentUser.email }),
+  //     });
+  //     const { status, data } = await res.json();
+
+  //     if (!status) {
+  //       router.push("/login");
+  //     } else {
+  //       const { id, name, email, profilePicture, about } = data;
+  //       setUser({
+  //         id: id,
+  //         name: name,
+  //         email: email,
+  //         profilePicture: profilePicture,
+  //         status: about,
+  //       });
+  //       socket.emit("add-user", id);
+  //     }
+  //   }
+  // });
+
+  // useEffect(() => {
+  //   if (user) {
+  //     socket.emit("add-user", user.id);
+  //   }
+  // }, [user]);
 
   useEffect(() => {
     if (!socketEvent && socket) {
@@ -93,7 +125,7 @@ function Main() {
           socket.emit("update-msg", data.from);
         }
         if (currentChatUserRef.current?.id !== data.from) {
-          console.log('this one is triggering')
+          console.log("this one is triggering");
           const updatedContactList = contactListRef.current?.map((contact) => {
             if (contact.id === data.from) {
               return {

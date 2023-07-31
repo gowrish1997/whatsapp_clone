@@ -7,13 +7,12 @@ import { signOut } from "firebase/auth";
 import { firebaseAuth } from "@/utils/FirebaseConfig";
 
 function logout() {
-  console.log('logout')
   const { user, setUser } = useContext(UserContext);
   const router = useRouter();
   useEffect(() => {
     socket.emit("signout", user.id);
     setUser(undefined);
-    signOut(firebaseAuth);
+    localStorage.removeItem("user");
     router.push("/login");
   }, [socket]);
   return <div className=" bg-conversation-panel-background "></div>;
