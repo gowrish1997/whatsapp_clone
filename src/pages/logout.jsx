@@ -7,6 +7,7 @@ import { signOut } from "firebase/auth";
 import { firebaseAuth } from "@/utils/FirebaseConfig";
 
 function logout() {
+  console.log('logout')
   const { user, setUser } = useContext(UserContext);
   const router = useRouter();
   useEffect(() => {
